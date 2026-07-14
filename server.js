@@ -7,15 +7,7 @@ const PORT = 3000;
 
 // Endpoint 1
 app.get("/", (req, res) => {
-    res.json({ message: "Hello, Backend!" });
-});
-
-// Endpoint 2
-app.get("/about", (req, res) => {
-    res.json({
-        assignment: "BE-01 - Built First API endpoint using Express.js",
-        author: "HASHIM CHOUDHRY"
-    });
+    res.json({ message: "Hello Server" });
 });
 
 app.listen(PORT, () => {
