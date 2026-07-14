@@ -5,9 +5,22 @@ const express = require("express");
 const app = express();
 const PORT = 3000;
 
-// Endpoint 1
+
+///////////////////Stage 1: Your First Real API Endpoint/////////////////////
+
+// Endpoint
 app.get("/", (req, res) => {
-    res.json({ message: "Hello Server" });
+    res.json({ 
+        name: "Task API",
+        version: "Version 1",
+        endpoints: ["/tasks"]
+     });
+});
+
+app.get("/health", (req, res) => {
+    res.json({ 
+        status: "OK"
+    });
 });
 
 app.listen(PORT, () => {
