@@ -14,8 +14,9 @@ const tasks = [
     { id: 3, title: "Task 3", done: false }
 ];
 
-/////////////////// Stage 3: POST a New Task /////////////////////
+/////////////////// Stage 4: Update and Delete /////////////////////
 
+///////All Endpoints///////
 // Root endpoint
 app.get("/", (req, res) => {
     res.json({
@@ -77,6 +78,69 @@ app.post("/tasks", (req, res) => {
     tasks.push(newTask);
 
     res.status(201).json(newTask);
+});
+
+// Update a task
+app.put("/tasks/:id", (req, res) => {
+    const taskId = parseInt(req.params.id, 10);
+    const task = tasks.find(t => t.id === taskId);
+
+    if (!task) {
+        return res.status(404).json({
+            error: `Task ${taskId} not found`
+        });
+    }
+
+    const { title, done } = req.body;
+
+    // Empty body validation
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Request body cannot be empty"
+        });
+    }
+
+    // Validate title if provided
+    if (title !== undefined) {
+        if (typeof title !== "string" || title.trim() === "") {
+            return res.status(400).json({
+                error: "Title must be a non-empty string"
+            });
+        }
+
+        task.title = title.trim();
+    }
+
+    // Validate done if provided
+    if (done !== undefined) {
+        if (typeof done !== "boolean") {
+            return res.status(400).json({
+                error: "Done must be true or false"
+            });
+        }
+
+        task.done = done;
+    }
+
+    res.status(200).json(task);
+});
+
+
+// Delete a task
+app.delete("/tasks/:id", (req, res) => {
+    const taskId = parseInt(req.params.id, 10);
+
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+
+    if (taskIndex === -1) {
+        return res.status(404).json({
+            error: `Task ${taskId} not found`
+        });
+    }
+
+    tasks.splice(taskIndex, 1);
+
+    res.status(204).send();
 });
 
 app.listen(PORT, () => {
