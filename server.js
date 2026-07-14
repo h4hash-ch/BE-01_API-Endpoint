@@ -4,42 +4,79 @@ const express = require("express");
 
 const app = express();
 const PORT = 3000;
-const tasks = [{ id: 1, title: "Task 1", done: "True" },
-{ id: 2, title: "Task 2", done: "False" },
-{ id: 3, title: "Task 3", done: "False" }
+
+// Middleware to parse JSON request bodies
+app.use(express.json());
+
+const tasks = [
+    { id: 1, title: "Task 1", done: true },
+    { id: 2, title: "Task 2", done: false },
+    { id: 3, title: "Task 3", done: false }
 ];
 
+/////////////////// Stage 3: POST a New Task /////////////////////
 
-///////////////////Stage 2: List and Single Task/////////////////////
-
-// Endpoints
+// Root endpoint
 app.get("/", (req, res) => {
     res.json({
         name: "Task API",
-        version: "Version 1",
+        version: "1.0",
         endpoints: ["/tasks"]
     });
 });
 
+// Health endpoint
+app.get("/health", (req, res) => {
+    res.json({
+        status: "ok"
+    });
+});
+
+// Get all tasks
 app.get("/tasks", (req, res) => {
     res.json(tasks);
 });
 
+// Get one task by ID
 app.get("/tasks/:id", (req, res) => {
-    const taskId = parseInt(req.params.id);
+    const taskId = parseInt(req.params.id, 10);
     const task = tasks.find(t => t.id === taskId);
+
     if (!task) {
-        return res.status(404).json({ error: `Task ${taskId} not found` });
+        return res.status(404).json({
+            error: `Task ${taskId} not found`
+        });
     }
+
     res.json(task);
 });
 
+// Create a new task
+app.post("/tasks", (req, res) => {
+    const { title } = req.body;
 
-//Health Endpoint (to check server, a professional practice in the industry)
-app.get("/health", (req, res) => {
-    res.json({
-        status: "OK"
-    });
+    // Validate input
+    if (!title || title.trim() === "") {
+        return res.status(400).json({
+            error: "Title is required"
+        });
+    }
+
+    // Generate next ID
+    const nextId =
+        tasks.length > 0
+            ? Math.max(...tasks.map(task => task.id)) + 1
+            : 1;
+
+    const newTask = {
+        id: nextId,
+        title: title.trim(),
+        done: false
+    };
+
+    tasks.push(newTask);
+
+    res.status(201).json(newTask);
 });
 
 app.listen(PORT, () => {
