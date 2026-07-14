@@ -1,12 +1,15 @@
 console.log("Starting server...");
 
 const express = require("express");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./openapi.json");
 
 const app = express();
 const PORT = 3000;
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const tasks = [
     { id: 1, title: "Task 1", done: true },
@@ -14,7 +17,7 @@ const tasks = [
     { id: 3, title: "Task 3", done: false }
 ];
 
-/////////////////// Stage 4: Update and Delete /////////////////////
+/////////////////// Stage 5: Swagger UI /////////////////////
 
 ///////All Endpoints///////
 // Root endpoint
