@@ -1,5 +1,4 @@
-///////////////Stage 4: Learn your first SQL by Hand/////////////////
-//I am already familiar with SQL commands, therefore skipping this stage and moving to Stage 5
+///////////////Stage 5: Publish Database Project/////////////////
 
 const Database = require("better-sqlite3");
 
