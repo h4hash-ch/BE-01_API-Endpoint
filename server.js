@@ -73,16 +73,18 @@ app.get("/tasks", (req, res) => {
 
 // Get one task by ID
 app.get("/tasks/:id", (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
-    const task = tasks.find(t => t.id === taskId);
+    const taskId = Number(req.params.id);
 
-    if (!task) {
+    const row = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(taskId);
+
+    if (!row) {
         return res.status(404).json({
             error: `Task ${taskId} not found`
         });
     }
-
-    res.json(task);
+    res.json(row);
 });
 
 // Create a new task
