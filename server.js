@@ -1,3 +1,5 @@
+///////////////Stage 2: Create New Tasks/////////////////
+
 const Database = require("better-sqlite3");
 
 console.log("Opening database...");
@@ -39,12 +41,6 @@ const PORT = 3000;
 // Middleware to parse JSON request bodies
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-const tasks = [
-    { id: 1, title: "Harcoded Task", done: true },
-];
-
-/////////////////// Stage 5: Swagger UI /////////////////////
 
 ///////All Endpoints///////
 // Root endpoint
@@ -113,64 +109,67 @@ app.post("/tasks", (req, res) => {
 
 // Update a task
 app.put("/tasks/:id", (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
-    const task = tasks.find(t => t.id === taskId);
+    const taskId = Number(req.params.id);
 
-    if (!task) {
+    const { title, done } = req.body;
+
+    // Validate body
+    if (
+        typeof title !== "string" ||
+        title.trim() === "" ||
+        typeof done !== "boolean"
+    ) {
+        return res.status(400).json({
+            error: "Invalid request body. title must be a string and done must be boolean."
+        });
+    }
+
+    // Check if task exists
+    const existingTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(taskId);
+
+    if (!existingTask) {
         return res.status(404).json({
             error: `Task ${taskId} not found`
         });
     }
 
-    const { title, done } = req.body;
+    // Update database
+    db.prepare(
+        "UPDATE tasks SET title = ?, done = ? WHERE id = ?"
+    ).run(title.trim(), done ? 1 : 0, taskId);
 
-    // Empty body validation
-    if (Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-            error: "Request body cannot be empty"
-        });
-    }
+    // Return updated task
+    const updatedTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(taskId);
 
-    // Validate title if provided
-    if (title !== undefined) {
-        if (typeof title !== "string" || title.trim() === "") {
-            return res.status(400).json({
-                error: "Title must be a non-empty string"
-            });
-        }
-
-        task.title = title.trim();
-    }
-
-    // Validate done if provided
-    if (done !== undefined) {
-        if (typeof done !== "boolean") {
-            return res.status(400).json({
-                error: "Done must be true or false"
-            });
-        }
-
-        task.done = done;
-    }
-
-    res.status(200).json(task);
+    res.status(200).json(updatedTask);
 });
 
 
 // Delete a task
 app.delete("/tasks/:id", (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
+    const taskId = Number(req.params.id);
 
-    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    // Check if task exists
+    const existingTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(taskId);
 
-    if (taskIndex === -1) {
+    if (!existingTask) {
         return res.status(404).json({
             error: `Task ${taskId} not found`
         });
     }
 
-    tasks.splice(taskIndex, 1);
+    // Delete from database
+    db.prepare(
+        "DELETE FROM tasks WHERE id = ?"
+    ).run(taskId);
 
+    // Empty response
     res.status(204).send();
 });
 
