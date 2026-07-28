@@ -98,19 +98,15 @@ app.post("/tasks", (req, res) => {
         });
     }
 
-    // Generate next ID
-    const nextId =
-        tasks.length > 0
-            ? Math.max(...tasks.map(task => task.id)) + 1
-            : 1;
+    // Insert task into database
+    const result = db.prepare(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)"
+    ).run(title.trim(), 0);
 
-    const newTask = {
-        id: nextId,
-        title: title.trim(),
-        done: false
-    };
-
-    tasks.push(newTask);
+    // Get the newly created task
+    const newTask = db.prepare(
+        "SELECT * FROM tasks WHERE id = ?"
+    ).get(result.lastInsertRowid);
 
     res.status(201).json(newTask);
 });
