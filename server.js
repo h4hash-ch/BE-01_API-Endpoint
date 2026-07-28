@@ -1,4 +1,5 @@
-///////////////Stage 2: Create New Tasks/////////////////
+///////////////Stage 4: Learn your first SQL by Hand/////////////////
+//I am already familiar with SQL commands, therefore skipping this stage and moving to Stage 5
 
 const Database = require("better-sqlite3");
 
