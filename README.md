@@ -1,4 +1,7 @@
-# Build your first CRUD API
+# A2: Connecting your CRUD to the Database
+The Assignment is undergoing commits, finalized ReadME documentation will be available by the end of assignment 2 or after completing all the required stages.
+
+# A1: Build your first CRUD API (Previously completed)
 
 A simple CRUD Task API built with **Node.js** and **Express.js**.
 

@@ -1,3 +1,32 @@
+const Database = require("better-sqlite3");
+
+console.log("Opening database...");
+const db = new Database("tasks.db");
+console.log("Database opened.");
+
+//Creating Table named "tasks" if it doesn't exist
+db.exec(`
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    done BOOLEAN
+)
+`);
+
+const rowCount = db.prepare("SELECT COUNT(*) AS count FROM tasks").get();
+
+if (rowCount.count === 0) {
+    const insert = db.prepare(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)"
+    );
+
+    insert.run("Learn SQLite", 0);
+    insert.run("Build CRUD API", 0);
+    insert.run("Test the API", 1);
+
+    console.log("Seeded example tasks.");
+}
+
 console.log("Starting server...");
 
 const express = require("express");
@@ -12,9 +41,7 @@ app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const tasks = [
-    { id: 1, title: "Task 1", done: true },
-    { id: 2, title: "Task 2", done: false },
-    { id: 3, title: "Task 3", done: false }
+    { id: 1, title: "Harcoded Task", done: true },
 ];
 
 /////////////////// Stage 5: Swagger UI /////////////////////
@@ -38,7 +65,10 @@ app.get("/health", (req, res) => {
 
 // Get all tasks
 app.get("/tasks", (req, res) => {
-    res.json(tasks);
+    const rows = db.prepare(
+        "SELECT * FROM tasks"
+    ).all();
+    res.json(rows);
 });
 
 // Get one task by ID
