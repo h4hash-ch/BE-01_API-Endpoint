@@ -226,47 +226,24 @@ Note: `tasks.db` is usually added to `.gitignore` so every new clone can automat
 
 ---
 
-# Database CRUD Implementation
+# SQLite Database Verification Using DB Browser
 
-The API now uses SQL queries instead of an in-memory array.
+To verify that the API and database were using the same SQLite file, the database was opened manually using DB Browser for SQLite.
 
-Examples:
+The verification process was:
 
-## Read tasks
+1. Opened tasks.db inside DB Browser for SQLite.
+2. Viewed the existing records using a **SELECT * FROM tasks** query.
+3. Updated the first task manually using an SQL UPDATE query.
+4. Saved the database changes using the Write Changes option
+5. Confirmed that the API reflected the database modification through Swagger UI.
 
-```sql
-SELECT * FROM tasks;
-```
-
-## Find a task by ID
-
-```sql
-SELECT * FROM tasks WHERE id = ?;
-```
-
-## Insert a task
-
-```sql
-INSERT INTO tasks (title, done)
-VALUES (?, ?);
-```
-
-## Update a task
-
-```sql
-UPDATE tasks
-SET title = ?, done = ?
-WHERE id = ?;
-```
-
-## Delete a task
-
-```sql
-DELETE FROM tasks WHERE id = ?;
-```
-
-All user input is passed using parameterized queries instead of being directly inserted into SQL strings.
-
+## 1. Viewing Tasks Using SELECT Query
+![Description](./images/screenshot1.png)
+## 2. Updating Task Data Directly in SQLite
+![Description](./images/screenshot2.png)
+## 3. Confirming Database Changes Through API
+![Description](./images/screenshot3.png)
 ---
 
 # Technologies Used
