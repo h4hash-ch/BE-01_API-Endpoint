@@ -1,39 +1,13 @@
-///////////////Stage 5: Publish Database Project/////////////////
-
-const Database = require("better-sqlite3");
-
-console.log("Opening database...");
-const db = new Database("tasks.db");
-console.log("Database opened.");
-
-//Creating Table named "tasks" if it doesn't exist
-db.exec(`
-CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    done BOOLEAN
-)
-`);
-
-const rowCount = db.prepare("SELECT COUNT(*) AS count FROM tasks").get();
-
-if (rowCount.count === 0) {
-    const insert = db.prepare(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)"
-    );
-
-    insert.run("Learn SQLite", 0);
-    insert.run("Build CRUD API", 0);
-    insert.run("Test the API", 1);
-
-    console.log("Seeded example tasks.");
-}
+require("dotenv").config();
 
 console.log("Starting server...");
 
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
+
+const pool = require("./db");
+const initializeDatabase = require("./database");
 
 const app = express();
 const PORT = 3000;
@@ -42,7 +16,10 @@ const PORT = 3000;
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+///////////////////////////
 ///////All Endpoints///////
+///////////////////////////
+
 // Root endpoint
 app.get("/", (req, res) => {
     res.json({
@@ -60,20 +37,36 @@ app.get("/health", (req, res) => {
 });
 
 // Get all tasks
-app.get("/tasks", (req, res) => {
-    const rows = db.prepare(
-        "SELECT * FROM tasks"
-    ).all();
-    res.json(rows);
+app.get("/tasks", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM tasks"
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({
+            error: "Database error"
+        });
+    }
 });
 
 // Get one task by ID
-app.get("/tasks/:id", (req, res) => {
+app.get("/tasks/:id", async (req, res) => {
     const taskId = Number(req.params.id);
 
-    const row = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(taskId);
+    if (Number.isNaN(taskId)) {
+        return res.status(400).json({
+            error: "Invalid task id"
+        });
+    }
+
+    const result = await pool.query(
+        "SELECT * FROM tasks WHERE id = $1",
+        [taskId]
+    );
+
+    const row = result.rows[0];
 
     if (!row) {
         return res.status(404).json({
@@ -84,7 +77,7 @@ app.get("/tasks/:id", (req, res) => {
 });
 
 // Create a new task
-app.post("/tasks", (req, res) => {
+app.post("/tasks", async (req, res) => {
     const { title } = req.body;
 
     // Validate input
@@ -95,21 +88,29 @@ app.post("/tasks", (req, res) => {
     }
 
     // Insert task into database
-    const result = db.prepare(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)"
-    ).run(title.trim(), 0);
+    const result = await pool.query(
+        `
+    INSERT INTO tasks (title, done)
+    VALUES ($1, $2)
+    RETURNING *
+    `,
+        [title.trim(), false]
+    );
 
-    // Get the newly created task
-    const newTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(result.lastInsertRowid);
+    const newTask = result.rows[0];
 
     res.status(201).json(newTask);
 });
 
 // Update a task
-app.put("/tasks/:id", (req, res) => {
+app.put("/tasks/:id", async (req, res) => {
     const taskId = Number(req.params.id);
+
+    if (Number.isNaN(taskId)) {
+        return res.status(400).json({
+            error: "Invalid task id"
+        });
+    }
 
     const { title, done } = req.body;
 
@@ -125,9 +126,12 @@ app.put("/tasks/:id", (req, res) => {
     }
 
     // Check if task exists
-    const existingTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(taskId);
+    const existingResult = await pool.query(
+        "SELECT * FROM tasks WHERE id = $1",
+        [taskId]
+    );
+
+    const existingTask = existingResult.rows[0];
 
     if (!existingTask) {
         return res.status(404).json({
@@ -136,27 +140,44 @@ app.put("/tasks/:id", (req, res) => {
     }
 
     // Update database
-    db.prepare(
-        "UPDATE tasks SET title = ?, done = ? WHERE id = ?"
-    ).run(title.trim(), done ? 1 : 0, taskId);
+    await pool.query(
+        `
+    UPDATE tasks
+    SET title = $1, done = $2
+    WHERE id = $3
+    `,
+        [title.trim(), done, taskId]
+    );
 
     // Return updated task
-    const updatedTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(taskId);
+    const updatedResult = await pool.query(
+        "SELECT * FROM tasks WHERE id = $1",
+        [taskId]
+    );
+
+    const updatedTask = updatedResult.rows[0];
 
     res.status(200).json(updatedTask);
 });
 
 
 // Delete a task
-app.delete("/tasks/:id", (req, res) => {
+app.delete("/tasks/:id", async (req, res) => {
     const taskId = Number(req.params.id);
 
+    if (Number.isNaN(taskId)) {
+        return res.status(400).json({
+            error: "Invalid task id"
+        });
+    }
+
     // Check if task exists
-    const existingTask = db.prepare(
-        "SELECT * FROM tasks WHERE id = ?"
-    ).get(taskId);
+    const existingResult = await pool.query(
+        "SELECT * FROM tasks WHERE id = $1",
+        [taskId]
+    );
+
+    const existingTask = existingResult.rows[0];
 
     if (!existingTask) {
         return res.status(404).json({
@@ -165,14 +186,23 @@ app.delete("/tasks/:id", (req, res) => {
     }
 
     // Delete from database
-    db.prepare(
-        "DELETE FROM tasks WHERE id = ?"
-    ).run(taskId);
+    await pool.query(
+        "DELETE FROM tasks WHERE id = $1",
+        [taskId]
+    );
 
     // Empty response
     res.status(204).send();
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+async function startServer() {
+    await initializeDatabase();
+
+    app.listen(PORT, () => {
+        console.log(
+            `Server running on http://localhost:${PORT}`
+        );
+    });
+}
+
+startServer();
