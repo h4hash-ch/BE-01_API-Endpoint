@@ -38,11 +38,9 @@ app.get("/health", (req, res) => {
 // Get all tasks
 app.get("/tasks", async (req, res) => {
     try {
-        const result = await pool.query(
-            "SELECT * FROM tasks"
-        );
+        const tasks = await database.getAllTasks();
 
-        res.json(result.rows);
+        res.json(tasks);
     } catch (error) {
         res.status(500).json({
             error: "Database error"
@@ -60,12 +58,7 @@ app.get("/tasks/:id", async (req, res) => {
         });
     }
 
-    const result = await pool.query(
-        "SELECT * FROM tasks WHERE id = $1",
-        [taskId]
-    );
-
-    const row = result.rows[0];
+    const row = await database.getTaskById(taskId);
 
     if (!row) {
         return res.status(404).json({
@@ -87,16 +80,7 @@ app.post("/tasks", async (req, res) => {
     }
 
     // Insert task into database
-    const result = await pool.query(
-        `
-    INSERT INTO tasks (title, done)
-    VALUES ($1, $2)
-    RETURNING *
-    `,
-        [title.trim(), false]
-    );
-
-    const newTask = result.rows[0];
+    const newTask = await database.createTask(title.trim());
 
     res.status(201).json(newTask);
 });
@@ -125,12 +109,7 @@ app.put("/tasks/:id", async (req, res) => {
     }
 
     // Check if task exists
-    const existingResult = await pool.query(
-        "SELECT * FROM tasks WHERE id = $1",
-        [taskId]
-    );
-
-    const existingTask = existingResult.rows[0];
+    const existingTask = await database.getTaskById(taskId);
 
     if (!existingTask) {
         return res.status(404).json({
@@ -139,22 +118,11 @@ app.put("/tasks/:id", async (req, res) => {
     }
 
     // Update database
-    await pool.query(
-        `
-    UPDATE tasks
-    SET title = $1, done = $2
-    WHERE id = $3
-    `,
-        [title.trim(), done, taskId]
+    const updatedTask = await database.updateTask(
+        taskId,
+        title.trim(),
+        done
     );
-
-    // Return updated task
-    const updatedResult = await pool.query(
-        "SELECT * FROM tasks WHERE id = $1",
-        [taskId]
-    );
-
-    const updatedTask = updatedResult.rows[0];
 
     res.status(200).json(updatedTask);
 });
@@ -171,12 +139,7 @@ app.delete("/tasks/:id", async (req, res) => {
     }
 
     // Check if task exists
-    const existingResult = await pool.query(
-        "SELECT * FROM tasks WHERE id = $1",
-        [taskId]
-    );
-
-    const existingTask = existingResult.rows[0];
+    const existingTask = await database.getTaskById(taskId);
 
     if (!existingTask) {
         return res.status(404).json({
@@ -185,10 +148,7 @@ app.delete("/tasks/:id", async (req, res) => {
     }
 
     // Delete from database
-    await pool.query(
-        "DELETE FROM tasks WHERE id = $1",
-        [taskId]
-    );
+    await database.deleteTask(taskId);
 
     // Empty response
     res.status(204).send();
