@@ -1,3 +1,15 @@
+# A3: Containerize your stack
+## Stage 0: Run PostgreSQL with Docker
+
+Start the PostgreSQL database container:
+
+```bash
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks \
+-p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres:17
+```
+
+Final updates to README file coming soon, meanwhile have a look onto previous progress below. Thank you.
+
 # A2: Connecting your CRUD API to SQLite Database
 
 This project is the continuation of **Assignment 1: Build your first CRUD API**.
