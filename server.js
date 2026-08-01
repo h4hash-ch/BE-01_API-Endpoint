@@ -6,8 +6,7 @@ const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./openapi.json");
 
-const pool = require("./db");
-const initializeDatabase = require("./database");
+const database = require("./database");
 
 const app = express();
 const PORT = 3000;
@@ -196,7 +195,7 @@ app.delete("/tasks/:id", async (req, res) => {
 });
 
 async function startServer() {
-    await initializeDatabase();
+    await database.initializeDatabase();
 
     app.listen(PORT, () => {
         console.log(
