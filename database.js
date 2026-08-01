@@ -1,5 +1,9 @@
 const pool = require("./db");
 
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function initializeDatabase() {
     await pool.query(`
         CREATE TABLE IF NOT EXISTS tasks (
